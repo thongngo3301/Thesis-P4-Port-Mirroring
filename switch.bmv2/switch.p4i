@@ -1,0 +1,294 @@
+# 1 "switch.p4"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "switch.p4"
+# 1 "includes/header.p4" 1
+header_type ethernet_t {
+    fields {
+        dstAddr : 48;
+        srcAddr : 48;
+        etherType : 16;
+    }
+}
+
+header_type intrinsic_metadata_t {
+    fields {
+        mcast_grp : 4;
+        egress_rid : 4;
+        mcast_hash : 16;
+        lf_field_list: 32;
+    }
+}
+
+header_type ipv4_t {
+    fields {
+        version : 4;
+        ihl : 4;
+        diffserv : 8;
+        totalLen : 16;
+        identification : 16;
+        flags : 3;
+        fragOffset : 13;
+        ttl : 8;
+        protocol : 8;
+        hdrChecksum : 16;
+        srcAddr : 32;
+        dstAddr: 32;
+    }
+}
+
+header_type icmp_t {
+    fields {
+        typeCode : 16;
+        hdrChecksum : 16;
+    }
+}
+
+header_type tcp_t {
+    fields {
+        srcPort : 16;
+        dstPort : 16;
+        seqNo : 32;
+        ackNo : 32;
+        dataOffset : 4;
+        res : 4;
+        flags : 8;
+        window : 16;
+        checksum : 16;
+        urgentPtr : 16;
+    }
+}
+
+header_type udp_t {
+    fields {
+        srcPort : 16;
+        dstPort : 16;
+        length_ : 16;
+        checksum : 16;
+    }
+}
+# 2 "switch.p4" 2
+# 1 "includes/parser.p4" 1
+parser start {
+    return parse_ethernet;
+}
+
+header ethernet_t ethernet;
+metadata intrinsic_metadata_t intrinsic_metadata;
+# 28 "includes/parser.p4"
+parser parse_ethernet {
+    extract(ethernet);
+    return select(latest.etherType) {
+        0x0800 : parse_ipv4;
+        default: ingress;
+    }
+}
+# 58 "includes/parser.p4"
+header ipv4_t ipv4;
+
+parser parse_ipv4 {
+    extract(ipv4);
+    return select(latest.fragOffset, latest.ihl, latest.protocol) {
+        0x501 : parse_icmp;
+        0x506 : parse_tcp;
+        0x511 : parse_udp;
+        default: ingress;
+    }
+}
+# 85 "includes/parser.p4"
+header icmp_t icmp;
+
+parser parse_icmp {
+    extract(icmp);
+    return select(latest.typeCode) {
+        default: ingress;
+    }
+}
+
+header tcp_t tcp;
+
+parser parse_tcp {
+    extract(tcp);
+    return select(latest.dstPort) {
+        default: ingress;
+    }
+}
+
+header udp_t udp;
+
+parser parse_udp {
+    extract(udp);
+    return select(latest.dstPort) {
+        default: ingress;
+    }
+}
+# 3 "switch.p4" 2
+# 1 "port_mirror.p4" 1
+/*
+
+	Packet Mirror Processing:
+
+	pkt -> pm_ingress -> mirror -> ... -> pm_egress -> listen port
+
+
+
+	------(ingress)------||------(egress)------> pipeline
+
+ */
+# 8 "port_mirror.p4"
+/* easy local metadata */
+header_type local_metadata_t {
+    fields {
+        mirror_id : 1; // used in pkt mirroring
+    }
+}
+
+metadata local_metadata_t local_metadata;
+
+/* Packet Mirroring in ingress */
+
+field_list mirror_field_list {
+ //standard_metadata;
+ local_metadata.mirror_id;
+}
+
+// Hint: add your runtime command.
+// mirroring_add [mirror_id] [output_port]
+action mirror_select(id) {
+ modify_field(local_metadata.mirror_id, id);
+ clone_ingress_pkt_to_egress(id, mirror_field_list);
+}
+
+// select the pkt based on its dstAddr and srcAddr, and make mirror.
+table pm_ingress {
+ reads {
+  ipv4.srcAddr : exact;
+  ipv4.dstAddr : exact;
+ }
+ actions {_nop; mirror_select;}
+}
+
+/* Packet Mirroring in egress */
+
+// the counter used to count the mirror pkt
+counter mirror_counter {
+ type : packets;
+ static : pm_egress;
+ instance_count : 10;
+}
+
+// count the mirror pkt.
+action mirror_execute(index) {
+ count(mirror_counter, index);
+}
+
+// reads the field, execute the action with the mirror pkt.
+table pm_egress {
+ reads {
+  // instance_type is used to distinguish the mirror pkt
+  // from the original pkt.
+  // mirror packet => instance_type = 1
+  standard_metadata.instance_type : exact;
+ }
+ actions {_nop; mirror_execute;}
+}
+
+/* Control Program */
+
+// beginning of ingress pipeline.
+control port_mirror_ingress {
+ apply(pm_ingress);
+}
+
+// end of egress pipeline.
+control port_mirror_egress {
+ apply(pm_egress);
+}
+# 4 "switch.p4" 2
+
+// table and action
+
+action _drop() {
+    drop();
+}
+
+action _nop() {
+}
+
+
+
+field_list mac_learn_digest {
+    ethernet.srcAddr;
+    standard_metadata.ingress_port;
+}
+
+action mac_learn() {
+    generate_digest(1024, mac_learn_digest);
+}
+
+table smac {
+    reads {
+        ethernet.srcAddr : exact;
+    }
+    actions {mac_learn; _nop;}
+    size : 512;
+}
+
+action forward(port) {
+    modify_field(standard_metadata.egress_spec, port);
+    // port security:
+    modify_field(port_sec_metadata.port, port);
+}
+
+action broadcast() {
+    modify_field(intrinsic_metadata.mcast_grp, 1);
+}
+
+table dmac {
+    reads {
+        ethernet.dstAddr : exact;
+    }
+    actions {
+        forward;
+        broadcast;
+    }
+    size : 512;
+}
+
+table mcast_src_pruning {
+    reads {
+        standard_metadata.instance_type : exact;
+    }
+    actions {_nop; _drop;}
+    size : 1;
+}
+
+control ingress {
+    // port mirror:
+    port_mirror_ingress();
+
+    apply(smac);
+    apply(dmac);
+
+    // trTCM:
+    trTCM_process();
+    // resubmit:
+    resubmit_ingress();
+    resubmit_egress();
+}
+
+control egress {
+    if (standard_metadata.ingress_port == standard_metadata.egress_port) {
+        apply(mcast_src_pruning);
+    }
+
+    // l2 port security:
+    port_security_process();
+    // icmp security:
+    icmp_security_process();
+    // udp flood:
+    udp_flood_process();
+
+    // port mirror:
+    port_mirror_egress();
+}

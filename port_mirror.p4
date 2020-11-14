@@ -6,10 +6,8 @@
  */
 
 /* easy local metadata */
-header_type local_metadata_t {
-    fields {
-        mirror_id : 1; // used in pkt mirroring
-    }
+header local_metadata_t {
+    bit<1> mirror_id; // used in pkt mirroring
 }
 
 metadata local_metadata_t local_metadata;

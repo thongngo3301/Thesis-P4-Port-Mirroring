@@ -59,7 +59,7 @@ header ipv4_t ipv4;
 
 parser parse_ipv4 {
     extract(ipv4);
-    return select(latest.fragOffset, latest.ihl, latest.protocol) {
+    return select(latest.frag_offset, latest.ihl, latest.protocol) {
         IP_PROTOCOLS_IPHL_ICMP : parse_icmp;
         IP_PROTOCOLS_IPHL_TCP : parse_tcp;
         IP_PROTOCOLS_IPHL_UDP : parse_udp;
@@ -86,7 +86,7 @@ header icmp_t icmp;
 
 parser parse_icmp {
     extract(icmp);
-    return select(latest.typeCode) {
+    return select(latest.type_code) {
         default: ingress;
     }
 }
@@ -95,7 +95,7 @@ header tcp_t tcp;
 
 parser parse_tcp {
     extract(tcp);
-    return select(latest.dstPort) {
+    return select(latest.dst_port) {
         default: ingress;
     }
 }
@@ -104,7 +104,7 @@ header udp_t udp;
 
 parser parse_udp {
     extract(udp);
-    return select(latest.dstPort) {
+    return select(latest.dst_port) {
         default: ingress;
     }
 }
