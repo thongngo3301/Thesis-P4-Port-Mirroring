@@ -1044,11 +1044,13 @@ control PM_Ingress(inout headers hdr,
   }
 
   action pm_forward(egressSpec port) {
+    hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     stdmeta.egress_spec = port;
   }
 
   table forwarding {
     key = {
+      hdr.ipv4.dst_addr: lpm;
       stdmeta.ingress_port: exact;
     }
     actions = {

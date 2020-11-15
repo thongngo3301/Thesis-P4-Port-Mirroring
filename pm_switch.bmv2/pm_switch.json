@@ -117,7 +117,7 @@
       "name" : "fl",
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 124,
+        "line" : 126,
         "column" : 43,
         "source_fragment" : "{ stdmeta }"
       },
@@ -382,7 +382,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 147,
+        "line" : 149,
         "column" : 8,
         "source_fragment" : "PM_Deparser"
       },
@@ -548,6 +548,48 @@
           "parameters" : [
             {
               "type" : "field",
+              "value" : ["ipv4", "ttl"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "+",
+                      "left" : {
+                        "type" : "field",
+                        "value" : ["ipv4", "ttl"]
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0xff"
+                      }
+                    }
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "pm_switch.p4",
+            "line" : 108,
+            "column" : 4,
+            "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
               "value" : ["standard_metadata", "egress_spec"]
             },
             {
@@ -557,7 +599,7 @@
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 108,
+            "line" : 109,
             "column" : 4,
             "source_fragment" : "stdmeta.egress_spec = port"
           }
@@ -583,7 +625,7 @@
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 124,
+            "line" : 126,
             "column" : 4,
             "source_fragment" : "clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta })"
           }
@@ -608,7 +650,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 127,
+            "line" : 129,
             "column" : 8,
             "source_fragment" : "copying"
           },
@@ -637,11 +679,17 @@
           "id" : 1,
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 111,
+            "line" : 112,
             "column" : 8,
             "source_fragment" : "forwarding"
           },
           "key" : [
+            {
+              "match_type" : "lpm",
+              "name" : "hdr.ipv4.dst_addr",
+              "target" : ["ipv4", "dst_addr"],
+              "mask" : null
+            },
             {
               "match_type" : "exact",
               "name" : "stdmeta.ingress_port",
@@ -649,7 +697,7 @@
               "mask" : null
             }
           ],
-          "match_type" : "exact",
+          "match_type" : "lpm",
           "type" : "simple",
           "max_size" : 1024,
           "with_counters" : false,
@@ -678,7 +726,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 141,
+        "line" : 143,
         "column" : 8,
         "source_fragment" : "PM_Egress"
       },
