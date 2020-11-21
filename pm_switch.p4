@@ -8,7 +8,6 @@
   the egress specification (standard metadata.egress_spec) that
   is presented to the Buffering Mechanism."
 
-  clone_spec = mirror_id in this example.
 */
 
 /*
@@ -39,7 +38,7 @@ parser PM_Parser(packet_in packet,
     packet.extract(hdr.ethernet);
     transition select(hdr.ethernet.ether_type) {
       ETHERTYPE_IPV4: parse_ipv4;
-      default: accept;
+      // no default rule: all other packets rejected
     }
   }
 
@@ -47,6 +46,14 @@ parser PM_Parser(packet_in packet,
     packet.extract(hdr.ipv4);
     verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
     verify(hdr.ipv4.ihl == 4w5, error.IPv4OptionsNotSupported);
+    transition select(hdr.ipv4.protocol) {
+      IP_PROTOCOLS_TCP: parse_tcp;
+      default: accept;
+    }
+  }
+
+  state parse_tcp {
+    packet.extract(hdr.tcp);
     transition accept;
   }
 }
@@ -100,43 +107,101 @@ control PM_Update_Checksum(inout headers hdr,
 control PM_Ingress(inout headers hdr,
                   inout local_metadata_t meta,
                   inout standard_metadata_t stdmeta) {
-  action pm_drop() {
+  /* common */
+  action _drop() {
     mark_to_drop(stdmeta);
   }
 
-  action pm_forward(egressSpec port) {
+  action _forward(EthernetAddress dst_mac, EgressSpec port) {
+    hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+    hdr.ethernet.dst_addr = dst_mac;
+    stdmeta.egress_spec = port;
     hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+  }
+
+  table pm_packet_forwarding {
+    key = {
+      // stdmeta.ingress_port: exact;
+      hdr.ipv4.dst_addr: lpm;
+    }
+    actions = {
+      _forward;
+      _drop;
+    }
+    size = 1024;
+    default_action = _drop();
+  }
+
+  /* MAC learning */
+  action _learn(EgressSpec port) {
     stdmeta.egress_spec = port;
   }
 
-  table forwarding {
+  table pm_mac_learning {
     key = {
-      hdr.ipv4.dst_addr: lpm;
-      stdmeta.ingress_port: exact;
+      hdr.ethernet.src_addr: exact;
     }
     actions = {
-      pm_forward;
-      pm_drop;
+      _learn;
+      _drop;
     }
-    size = 1024;
-    default_action = pm_drop();
+    size = 512;
+    default_action = _drop();
   }
 
-  action pm_copy() {
-    clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
+  /* cloning all packets */
+  action _clone_all() {
+    clone3(CloneType.I2E, (bit<32>)32w100, { stdmeta });
   }
 
-  table copying {
+  table pm_cloning_all {
     actions = {
-      pm_copy;
+      _clone_all;
     }
     size = 1;
-    default_action = pm_copy();
+    default_action = _clone_all();
+  }
+
+  /* cloning specific src_addr packets */
+  action _clone_by_src_ip() {
+    clone3(CloneType.I2E, (bit<32>)32w200, { stdmeta });
+  }
+
+  table pm_cloning_by_src_ip {
+    key = {
+      hdr.ipv4.src_addr: lpm;
+    }
+    actions = {
+      _clone_by_src_ip;
+      _drop;
+    }
+    size = 1;
+    default_action = _drop();
+  }
+
+  /* cloning specific dst_port packets */
+  action _clone_by_dst_port() {
+    clone3(CloneType.I2E, (bit<32>)32w300, { stdmeta })
+  }
+
+  table pm_cloning_by_dst_port {
+    key = {
+      hdr.tcp.dst_port: exact;
+    }
+    actions = {
+      _clone_by_dst_port;
+      _drop;
+    }
+    size = 1;
+    default_action = _drop();
   }
 
   apply {
-    copying.apply();
-    forwarding.apply();
+    pm_cloning_all();
+    pm_cloning_by_src_ip.apply();
+    pm_cloning_by_dst_port.apply();
+    pm_mac_learning.apply();
+    pm_packet_forwarding.apply();
   }
 }
 

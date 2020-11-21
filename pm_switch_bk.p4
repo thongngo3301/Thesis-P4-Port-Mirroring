@@ -132,4 +132,8 @@ https://github.com/p4lang/p4-spec/blob/master/p4-16/psa/examples/psa-example-par
 https://p4.org/p4-spec/docs/P4-16-v1.1.0-draft.html#sec-vss-example
 http://csie.nqu.edu.tw/smallko/sdn/p4_meter.htm
 https://github.com/FZU-SDN/MatReduce-examples/blob/master/c1/p4src/optimize.p4
+
 http://csie.nqu.edu.tw/smallko/sdn/p4-clone.htm
+http://csie.nqu.edu.tw/smallko/sdn/p4utils_sendtocpu.htm
+http://csie.nqu.edu.tw/smallko/sdn/p4switch.htm
+http://csie.nqu.edu.tw/smallko/sdn/p4bmv2docker.htm

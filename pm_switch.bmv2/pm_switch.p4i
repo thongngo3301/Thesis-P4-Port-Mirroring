@@ -12,7 +12,6 @@
   the egress specification (standard metadata.egress_spec) that
   is presented to the Buffering Mechanism."
 
-  clone_spec = mirror_id in this example.
 */
 
 /*
@@ -105,7 +104,7 @@ match_kind {
     /// Longest-prefix match.
     lpm
 }
-# 22 "pm_switch.p4" 2
+# 21 "pm_switch.p4" 2
 # 1 "/usr/local/share/p4c/p4include/v1model.p4" 1
 /*
 Copyright 2013-present Barefoot Networks, Inc.
@@ -884,7 +883,7 @@ package V1Switch<H, M>(Parser<H, M> p,
                        ComputeChecksum<H, M> ck,
                        Deparser<H> dep
                        );
-# 23 "pm_switch.p4" 2
+# 22 "pm_switch.p4" 2
 # 1 "includes/header.p4" 1
 # 60 "includes/header.p4"
 typedef bit<48> EthernetAddress;
@@ -957,9 +956,9 @@ struct local_metadata_t {
 struct headers {
     ethernet_t ethernet;
     ipv4_t ipv4;
-    // tcp_t       tcp;
+    tcp_t tcp;
 }
-# 24 "pm_switch.p4" 2
+# 23 "pm_switch.p4" 2
 
 error {
   IPv4IncorrectVersion,
@@ -978,7 +977,7 @@ parser PM_Parser(packet_in packet,
     packet.extract(hdr.ethernet);
     transition select(hdr.ethernet.ether_type) {
       0x0800: parse_ipv4;
-      default: accept;
+      // no default rule: all other packets rejected
     }
   }
 
@@ -986,6 +985,14 @@ parser PM_Parser(packet_in packet,
     packet.extract(hdr.ipv4);
     verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
     verify(hdr.ipv4.ihl == 4w5, error.IPv4OptionsNotSupported);
+    transition select(hdr.ipv4.protocol) {
+      6: parse_tcp;
+      default: accept;
+    }
+  }
+
+  state parse_tcp {
+    packet.extract(hdr.tcp);
     transition accept;
   }
 }
@@ -1039,42 +1046,70 @@ control PM_Update_Checksum(inout headers hdr,
 control PM_Ingress(inout headers hdr,
                   inout local_metadata_t meta,
                   inout standard_metadata_t stdmeta) {
-  action pm_drop() {
+  /* common */
+  action _drop() {
     mark_to_drop(stdmeta);
   }
 
-  action pm_forward(egressSpec port) {
+  action _forward(egressSpec port) {
     hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     stdmeta.egress_spec = port;
   }
 
   table forwarding {
     key = {
-      hdr.ipv4.dst_addr: lpm;
       stdmeta.ingress_port: exact;
     }
     actions = {
-      pm_forward;
-      pm_drop;
+      _forward;
+      _drop;
     }
     size = 1024;
-    default_action = pm_drop();
+    default_action = _drop();
   }
 
-  action pm_copy() {
-    clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
+  /* handling src_mac */
+  action
+
+  /* handling dst_mac */
+
+  /* matching src_addr */
+  action pm_copy_src_addr() {
+    clone3(CloneType.I2E, (bit<32>)32w100, { stdmeta });
   }
 
-  table copying {
+  // copy packets from specific addr
+  table mirroring_src_addr {
+    key = {
+      hdr.ipv4.src_addr: lpm;
+    }
     actions = {
-      pm_copy;
+      pm_copy_src_addr;
     }
     size = 1;
-    default_action = pm_copy();
+    default_action = pm_copy_src_addr();
+  }
+
+  /* matching dst_port */
+  action pm_copy_dst_port() {
+    clone3(CloneType.I2E, (bit<32>)32w200, { stdmeta })
+  }
+
+  // copy packets to specific port
+  table mirroring_dst_port {
+    key = {
+      hdr.tcp.dst_port: exact;
+    }
+    actions = {
+      pm_copy_dst_port;
+    }
+    size = 1;
+    default_action = pm_copy_dst_port();
   }
 
   apply {
-    copying.apply();
+    mirroring_src_addr.apply();
+    mirroring_dst_port.apply();
     forwarding.apply();
   }
 }

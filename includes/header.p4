@@ -59,19 +59,19 @@
 
 typedef bit<48> EthernetAddress;
 typedef bit<32> IPv4Address;
-typedef bit<9>  egressSpec;
-
-header ethernet_t {
-    EthernetAddress src_addr;
-    EthernetAddress dst_addr;
-    bit<16> ether_type;
-}
+typedef bit<9>  EgressSpec;
 
 header intrinsic_metadata_t {
     bit<4> mcast_grp;
     bit<4> egress_rid;
     bit<16> mcast_hash;
     bit<32> lf_field_list;
+}
+
+header ethernet_t {
+    EthernetAddress src_addr;
+    EthernetAddress dst_addr;
+    bit<16> ether_type;
 }
 
 header ipv4_t {
@@ -127,5 +127,5 @@ struct local_metadata_t {
 struct headers {
     ethernet_t  ethernet;
     ipv4_t      ipv4;
-    // tcp_t       tcp;
+    tcp_t       tcp;
 }
