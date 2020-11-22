@@ -25,4 +25,9 @@ do
   veth_id_arr+=("${col2}")
 done < config/veth-pairs.txt
 
-sudo simple_switch --interface 1@veth${veth_id_arr[0]} --interface 2@veth${veth_id_arr[1]} --interface 3@veth${veth_id_arr[2]} --interface 4@veth${veth_id_arr[3]} pm_switch.bmv2/pm_switch.json
+sudo simple_switch --interface 1@veth${veth_id_arr[0]} \
+                  --interface 2@veth${veth_id_arr[1]} \
+                  --interface 3@veth${veth_id_arr[2]} \
+                  --interface 4@veth${veth_id_arr[3]} \
+                  --interface 5@veth${veth_id_arr[4]} \
+                  pm_switch.bmv2/pm_switch.json

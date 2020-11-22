@@ -56,10 +56,11 @@
 #define UDP_PORT_SFLOW              6343
 
 #define IP_IHL_MIN_LENGTH           5
+#define MAC_LEARN_RECEIVER 1024
 
 typedef bit<48> EthernetAddress;
 typedef bit<32> IPv4Address;
-typedef bit<9>  EgressSpec;
+typedef bit<9>  PortSpec;
 
 header intrinsic_metadata_t {
     bit<4> mcast_grp;
@@ -114,14 +115,14 @@ header udp_t {
     bit<16> checksum;
 }
 
-struct pm_metadata_t {
-    // used in mirroring
-    bit<1> mirror_id;
+struct mac_learn_t {
+    EthernetAddress src_addr;
+    PortSpec ingress_port;
 }
 
 struct local_metadata_t {
-    // pm_metadata_t pm_metadata;
-    intrinsic_metadata_t intrinsic_metadata;
+    // intrinsic_metadata_t intrinsic_metadata;
+    mac_learn_t mac_learn;
 }
 
 struct headers {

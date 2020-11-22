@@ -1,3 +1,7 @@
-table_add forwarding pm_forward 22.2.0.0/16 1 => 2
-table_add forwarding pm_forward 11.1.0.0/16 2 => 1
-mirroring_add 250 3
+table_add pm_mac_forwarding _forward_mac 00:00:00:01:01:01 => 1
+table_add pm_mac_forwarding _forward_mac 00:00:00:02:02:02 => 2
+table_add pm_ipv4_forwarding _forward_ipv4 11.1.0.0/24 => 00:00:00:01:01:01 1
+table_add pm_ipv4_forwarding _forward_ipv4 22.2.0.0/24 => 00:00:00:02:02:02 2
+mirroring_add 300 3
+mirroring_add 400 4
+mirroring_add 500 5

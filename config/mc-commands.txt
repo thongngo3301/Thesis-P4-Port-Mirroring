@@ -1,0 +1,11 @@
+mc_mgrp_create 100
+mc_node_create 11 1
+mc_node_create 22 2
+mc_node_create 33 3
+mc_node_create 44 4
+mc_node_create 55 5
+mc_node_associate 100 11
+mc_node_associate 100 22
+mc_node_associate 100 33
+mc_node_associate 100 44
+mc_node_associate 100 55

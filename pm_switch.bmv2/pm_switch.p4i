@@ -5,7 +5,10 @@
 /* -*- P4_16 -*- */
 
 /*
-  action:
+  MAC learning:
+    digest<T>(in bit<32> receiver, in T data);
+
+  Cloning action:
     clone3<T>(in CloneType type, in bit<32> session, in T data);
 
   "In addition to other session attributes, clone_spec determines
@@ -104,7 +107,7 @@ match_kind {
     /// Longest-prefix match.
     lpm
 }
-# 21 "pm_switch.p4" 2
+# 24 "pm_switch.p4" 2
 # 1 "/usr/local/share/p4c/p4include/v1model.p4" 1
 /*
 Copyright 2013-present Barefoot Networks, Inc.
@@ -883,24 +886,24 @@ package V1Switch<H, M>(Parser<H, M> p,
                        ComputeChecksum<H, M> ck,
                        Deparser<H> dep
                        );
-# 22 "pm_switch.p4" 2
+# 25 "pm_switch.p4" 2
 # 1 "includes/header.p4" 1
-# 60 "includes/header.p4"
+# 61 "includes/header.p4"
 typedef bit<48> EthernetAddress;
 typedef bit<32> IPv4Address;
-typedef bit<9> egressSpec;
-
-header ethernet_t {
-    EthernetAddress src_addr;
-    EthernetAddress dst_addr;
-    bit<16> ether_type;
-}
+typedef bit<9> PortSpec;
 
 header intrinsic_metadata_t {
     bit<4> mcast_grp;
     bit<4> egress_rid;
     bit<16> mcast_hash;
     bit<32> lf_field_list;
+}
+
+header ethernet_t {
+    EthernetAddress src_addr;
+    EthernetAddress dst_addr;
+    bit<16> ether_type;
 }
 
 header ipv4_t {
@@ -943,14 +946,14 @@ header udp_t {
     bit<16> checksum;
 }
 
-struct pm_metadata_t {
-    // used in mirroring
-    bit<1> mirror_id;
+struct mac_learn_t {
+    EthernetAddress src_addr;
+    PortSpec ingress_port;
 }
 
 struct local_metadata_t {
-    // pm_metadata_t pm_metadata;
-    intrinsic_metadata_t intrinsic_metadata;
+    // intrinsic_metadata_t intrinsic_metadata;
+    mac_learn_t mac_learn;
 }
 
 struct headers {
@@ -958,7 +961,7 @@ struct headers {
     ipv4_t ipv4;
     tcp_t tcp;
 }
-# 23 "pm_switch.p4" 2
+# 26 "pm_switch.p4" 2
 
 error {
   IPv4IncorrectVersion,
@@ -967,7 +970,7 @@ error {
 
 parser PM_Parser(packet_in packet,
                 out headers hdr,
-                inout local_metadata_t meta,
+                inout local_metadata_t lcmeta,
                 inout standard_metadata_t stdmeta) {
   state start {
     transition parse_ethernet;
@@ -998,7 +1001,7 @@ parser PM_Parser(packet_in packet,
 }
 
 control PM_Verify_Checksum(inout headers hdr,
-                          inout local_metadata_t meta) {
+                          inout local_metadata_t lcmeta) {
   apply {
     verify_checksum(
             hdr.ipv4.isValid() && hdr.ipv4.ihl == 5,
@@ -1021,7 +1024,7 @@ control PM_Verify_Checksum(inout headers hdr,
 }
 
 control PM_Update_Checksum(inout headers hdr,
-                      inout local_metadata_t meta) {
+                      inout local_metadata_t lcmeta) {
   apply {
     update_checksum(
             hdr.ipv4.isValid() && hdr.ipv4.ihl == 5,
@@ -1044,78 +1047,134 @@ control PM_Update_Checksum(inout headers hdr,
 }
 
 control PM_Ingress(inout headers hdr,
-                  inout local_metadata_t meta,
+                  inout local_metadata_t lcmeta,
                   inout standard_metadata_t stdmeta) {
-  /* common */
+  /* COMMON */
+  action _nop() { }
+
   action _drop() {
     mark_to_drop(stdmeta);
   }
 
-  action _forward(egressSpec port) {
-    hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+  /* MAC learning */
+  action _learn_mac() {
+    lcmeta.mac_learn.src_addr = hdr.ethernet.src_addr;
+    lcmeta.mac_learn.ingress_port = stdmeta.ingress_port;
+    digest(1024, lcmeta.mac_learn);
+  }
+
+  table pm_mac_learning {
+    key = {
+      hdr.ethernet.src_addr: exact;
+    }
+    actions = {
+      _learn_mac;
+      _nop;
+    }
+    size = 1024;
+    default_action = _learn_mac();
+  }
+
+  /* MAC forwarding */
+  action _broadcast() {
+    stdmeta.mcast_grp = 1;
+  }
+
+  action _forward_mac(PortSpec port) {
     stdmeta.egress_spec = port;
   }
 
-  table forwarding {
+  table pm_mac_forwarding {
     key = {
-      stdmeta.ingress_port: exact;
+      hdr.ethernet.dst_addr: exact;
     }
     actions = {
-      _forward;
+      _forward_mac;
+      _broadcast;
+    }
+    size = 1024;
+    default_action = _broadcast();
+  }
+
+  /* IPv4 forwarding */
+  action _forward_ipv4(EthernetAddress dst_mac, PortSpec port) {
+    hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+    hdr.ethernet.dst_addr = dst_mac;
+    stdmeta.egress_spec = port;
+    hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+  }
+
+  table pm_ipv4_forwarding {
+    key = {
+      hdr.ipv4.dst_addr: lpm;
+    }
+    actions = {
+      _forward_ipv4;
       _drop;
     }
     size = 1024;
     default_action = _drop();
   }
 
-  /* handling src_mac */
-  action
-
-  /* handling dst_mac */
-
-  /* matching src_addr */
-  action pm_copy_src_addr() {
+  /* Cloning all packets */
+  action _clone_all() {
     clone3(CloneType.I2E, (bit<32>)32w100, { stdmeta });
   }
 
-  // copy packets from specific addr
-  table mirroring_src_addr {
+  table pm_cloning_all {
+    actions = {
+      _clone_all;
+    }
+    size = 1;
+    default_action = _clone_all();
+  }
+
+  /* Cloning specific src_addr packets */
+  action _clone_by_src_ip() {
+    clone3(CloneType.I2E, (bit<32>)32w200, { stdmeta });
+  }
+
+  table pm_cloning_by_src_ip {
     key = {
       hdr.ipv4.src_addr: lpm;
     }
     actions = {
-      pm_copy_src_addr;
+      _clone_by_src_ip;
+      _drop;
     }
     size = 1;
-    default_action = pm_copy_src_addr();
+    default_action = _drop();
   }
 
-  /* matching dst_port */
-  action pm_copy_dst_port() {
-    clone3(CloneType.I2E, (bit<32>)32w200, { stdmeta })
+  /* Cloning specific dst_port packets */
+  action _clone_by_dst_port() {
+    clone3(CloneType.I2E, (bit<32>)32w300, { stdmeta });
   }
 
-  // copy packets to specific port
-  table mirroring_dst_port {
+  table pm_cloning_by_dst_port {
     key = {
       hdr.tcp.dst_port: exact;
     }
     actions = {
-      pm_copy_dst_port;
+      _clone_by_dst_port;
+      _drop;
     }
     size = 1;
-    default_action = pm_copy_dst_port();
+    default_action = _drop();
   }
 
   apply {
-    mirroring_src_addr.apply();
-    mirroring_dst_port.apply();
-    forwarding.apply();
+    pm_mac_learning.apply();
+    pm_mac_forwarding.apply();
+    pm_ipv4_forwarding.apply();
+    pm_cloning_all.apply();
+    pm_cloning_by_src_ip.apply();
+    pm_cloning_by_dst_port.apply();
   }
 }
 
 control PM_Egress(inout headers hdr,
-                inout local_metadata_t meta,
+                inout local_metadata_t lcmeta,
                 inout standard_metadata_t stdmeta) {
   apply { }
 }
