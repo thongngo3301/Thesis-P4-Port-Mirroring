@@ -6,6 +6,17 @@ NC='\033[0m'            # no color
 
 curr_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+# common packages
+echo -e "${YE}Installing common packages...${NC}"
+sudo apt update
+sudo apt install -y cmake g++ git automake libtool libgc-dev bison flex libfl-dev libgmp-dev libboost-dev libboost-iostreams-dev libboost-graph-dev llvm pkg-config python python-scapy python-ipaddr python-ply tcpdump doxygen
+sudo apt install -y autoconf autogen automake libtool python3.8 python3-pip
+sudo pip3 install --upgrade setuptools
+sudo pip3 install --pre scapy
+sudo ln -s /usr/bin/python3.8 /usr/bin/python3
+cd $curr_dir
+echo
+
 # repo url
 repo[0]='protobuf'
 repo[1]='protocolbuffers/'${repo[0]}'.git'
@@ -30,17 +41,6 @@ do
 done
 
 echo -e "${LC}Installing dependencies...${NC}"
-echo
-
-# common packages
-echo -e "${YE}Installing common packages...${NC}"
-sudo apt update
-sudo apt install -y cmake g++ git automake libtool libgc-dev bison flex libfl-dev libgmp-dev libboost-dev libboost-iostreams-dev libboost-graph-dev llvm pkg-config python python-scapy python-ipaddr python-ply tcpdump doxygen
-sudo apt install -y autoconf autogen automake libtool python3.8 python3-pip
-sudo pip3 install --upgrade setuptools
-sudo pip3 install --pre scapy
-sudo ln -s /usr/bin/python3.8 /usr/bin/python3
-cd $curr_dir
 echo
 
 # protobuf
