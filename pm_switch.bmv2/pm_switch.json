@@ -6,11 +6,9 @@
       "fields" : [
         ["tmp", 1, false],
         ["tmp_0", 1, false],
-        ["tmp_1", 48, false],
-        ["tmp_2", 9, false],
-        ["userMetadata._mac_learn_src_addr0", 48, false],
-        ["userMetadata._mac_learn_ingress_port1", 9, false],
-        ["_padding_0", 4, false]
+        ["userMetadata._mac_learn_src_addr1", 48, false],
+        ["userMetadata._mac_learn_ingress_port2", 9, false],
+        ["_padding_0", 5, false]
       ]
     },
     {
@@ -64,8 +62,18 @@
       ]
     },
     {
-      "name" : "tcp_t",
+      "name" : "udp_t",
       "id" : 4,
+      "fields" : [
+        ["src_port", 16, false],
+        ["dst_port", 16, false],
+        ["length_", 16, false],
+        ["checksum", 16, false]
+      ]
+    },
+    {
+      "name" : "tcp_t",
+      "id" : 5,
       "fields" : [
         ["src_port", 16, false],
         ["dst_port", 16, false],
@@ -77,6 +85,16 @@
         ["window", 16, false],
         ["checksum", 16, false],
         ["urgent_ptr", 16, false]
+      ]
+    },
+    {
+      "name" : "intrinsic_metadata_t",
+      "id" : 6,
+      "fields" : [
+        ["mcast_grp", 4, false],
+        ["egress_rid", 4, false],
+        ["mcast_hash", 16, false],
+        ["lf_field_list", 32, false]
       ]
     }
   ],
@@ -110,9 +128,23 @@
       "pi_omit" : true
     },
     {
-      "name" : "tcp",
+      "name" : "udp",
       "id" : 4,
+      "header_type" : "udp_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "tcp",
+      "id" : 5,
       "header_type" : "tcp_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "_intrinsic_metadata0",
+      "id" : 6,
+      "header_type" : "intrinsic_metadata_t",
       "metadata" : false,
       "pi_omit" : true
     }
@@ -127,159 +159,7 @@
       "name" : "fl",
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 182,
-        "column" : 43,
-        "source_fragment" : "{ stdmeta }"
-      },
-      "elements" : [
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "ingress_port"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_spec"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_port"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "instance_type"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "packet_length"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "enq_timestamp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "enq_qdepth"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "deq_timedelta"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "deq_qdepth"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "ingress_global_timestamp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_global_timestamp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "mcast_grp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_rid"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "checksum_error"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "parser_error"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "priority"]
-        }
-      ]
-    },
-    {
-      "id" : 2,
-      "name" : "fl_0",
-      "source_info" : {
-        "filename" : "pm_switch.p4",
-        "line" : 195,
-        "column" : 43,
-        "source_fragment" : "{ stdmeta }"
-      },
-      "elements" : [
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "ingress_port"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_spec"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_port"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "instance_type"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "packet_length"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "enq_timestamp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "enq_qdepth"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "deq_timedelta"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "deq_qdepth"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "ingress_global_timestamp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_global_timestamp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "mcast_grp"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "egress_rid"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "checksum_error"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "parser_error"]
-        },
-        {
-          "type" : "field",
-          "value" : ["standard_metadata", "priority"]
-        }
-      ]
-    },
-    {
-      "id" : 3,
-      "name" : "fl_1",
-      "source_info" : {
-        "filename" : "pm_switch.p4",
-        "line" : 212,
+        "line" : 188,
         "column" : 43,
         "source_fragment" : "{ stdmeta }"
       },
@@ -521,6 +401,12 @@
           "transitions" : [
             {
               "type" : "hexstr",
+              "value" : "0x11",
+              "mask" : null,
+              "next_state" : "parse_udp"
+            },
+            {
+              "type" : "hexstr",
               "value" : "0x06",
               "mask" : null,
               "next_state" : "parse_tcp"
@@ -540,8 +426,32 @@
           ]
         },
         {
-          "name" : "parse_tcp",
+          "name" : "parse_udp",
           "id" : 2,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "udp"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "default",
+              "value" : null,
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_tcp",
+          "id" : 3,
           "parser_ops" : [
             {
               "parameters" : [
@@ -573,7 +483,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 243,
+        "line" : 249,
         "column" : 8,
         "source_fragment" : "PM_Deparser"
       },
@@ -590,7 +500,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 90,
+        "line" : 96,
         "column" : 4,
         "source_fragment" : "update_checksum( ..."
       },
@@ -647,7 +557,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 67,
+        "line" : 73,
         "column" : 4,
         "source_fragment" : "verify_checksum( ..."
       },
@@ -700,39 +610,12 @@
       ]
     }
   ],
-  "learn_lists" : [
-    {
-      "id" : 1,
-      "name" : "mac_learn_t",
-      "source_info" : {
-        "filename" : "pm_switch.p4",
-        "line" : 124,
-        "column" : 17,
-        "source_fragment" : "lcmeta"
-      },
-      "elements" : [
-        {
-          "type" : "field",
-          "value" : ["scalars", "tmp_1"]
-        },
-        {
-          "type" : "field",
-          "value" : ["scalars", "tmp_2"]
-        }
-      ]
-    }
-  ],
+  "learn_lists" : [],
   "actions" : [
     {
-      "name" : "PM_Ingress._nop",
+      "name" : "PM_Ingress._drop",
       "id" : 0,
       "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "PM_Ingress._drop",
-      "id" : 1,
-      "runtime_data" : [],
       "primitives" : [
         {
           "op" : "mark_to_drop",
@@ -740,223 +623,20 @@
             {
               "type" : "header",
               "value" : "standard_metadata"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 117,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop(stdmeta)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._drop",
-      "id" : 2,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "mark_to_drop",
-          "parameters" : [
-            {
-              "type" : "header",
-              "value" : "standard_metadata"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 117,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop(stdmeta)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._drop",
-      "id" : 3,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "mark_to_drop",
-          "parameters" : [
-            {
-              "type" : "header",
-              "value" : "standard_metadata"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 117,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop(stdmeta)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._learn_mac",
-      "id" : 4,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "userMetadata._mac_learn_src_addr0"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ethernet", "src_addr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 122,
-            "column" : 4,
-            "source_fragment" : "lcmeta.mac_learn.src_addr = hdr.ethernet.src_addr"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "userMetadata._mac_learn_ingress_port1"]
-            },
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "ingress_port"]
             }
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
             "line" : 123,
             "column" : 4,
-            "source_fragment" : "lcmeta.mac_learn.ingress_port = stdmeta.ingress_port"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_1"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ethernet", "src_addr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 122,
-            "column" : 32,
-            "source_fragment" : "hdr.ethernet.src_addr"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_2"]
-            },
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "ingress_port"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 123,
-            "column" : 36,
-            "source_fragment" : "stdmeta.ingress_port"
-          }
-        },
-        {
-          "op" : "generate_digest",
-          "parameters" : [
-            {
-              "type" : "hexstr",
-              "value" : "0x00000400"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x1"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 124,
-            "column" : 4,
-            "source_fragment" : "digest(1024, lcmeta.mac_learn)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._broadcast",
-      "id" : 5,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "mcast_grp"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x0001"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 141,
-            "column" : 4,
-            "source_fragment" : "stdmeta.mcast_grp = 1"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._forward_mac",
-      "id" : 6,
-      "runtime_data" : [
-        {
-          "name" : "port",
-          "bitwidth" : 9
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "egress_spec"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 145,
-            "column" : 4,
-            "source_fragment" : "stdmeta.egress_spec = port"
+            "source_fragment" : "mark_to_drop(stdmeta)"
           }
         }
       ]
     },
     {
       "name" : "PM_Ingress._forward_ipv4",
-      "id" : 7,
+      "id" : 1,
       "runtime_data" : [
         {
           "name" : "dst_mac",
@@ -982,7 +662,7 @@
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 162,
+            "line" : 168,
             "column" : 4,
             "source_fragment" : "hdr.ethernet.src_addr = hdr.ethernet.dst_addr"
           }
@@ -1001,28 +681,9 @@
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 163,
+            "line" : 169,
             "column" : 4,
             "source_fragment" : "hdr.ethernet.dst_addr = dst_mac"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "egress_spec"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 1
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 164,
-            "column" : 4,
-            "source_fragment" : "stdmeta.egress_spec = port"
           }
         },
         {
@@ -1062,68 +723,35 @@
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 165,
+            "line" : 170,
             "column" : 4,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "pm_switch.p4",
+            "line" : 171,
+            "column" : 4,
+            "source_fragment" : "stdmeta.egress_spec = port"
           }
         }
       ]
     },
     {
       "name" : "PM_Ingress._clone_all",
-      "id" : 8,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "clone_ingress_pkt_to_egress",
-          "parameters" : [
-            {
-              "type" : "hexstr",
-              "value" : "0x00000064"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x1"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 182,
-            "column" : 4,
-            "source_fragment" : "clone3(CloneType.I2E, (bit<32>)32w100, { stdmeta })"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._clone_by_src_ip",
-      "id" : 9,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "clone_ingress_pkt_to_egress",
-          "parameters" : [
-            {
-              "type" : "hexstr",
-              "value" : "0x000000c8"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x2"
-            }
-          ],
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 195,
-            "column" : 4,
-            "source_fragment" : "clone3(CloneType.I2E, (bit<32>)32w200, { stdmeta })"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "PM_Ingress._clone_by_dst_port",
-      "id" : 10,
+      "id" : 2,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1135,12 +763,12 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0x3"
+              "value" : "0x1"
             }
           ],
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 212,
+            "line" : 188,
             "column" : 4,
             "source_fragment" : "clone3(CloneType.I2E, (bit<32>)32w300, { stdmeta })"
           }
@@ -1154,92 +782,18 @@
       "id" : 0,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 110,
+        "line" : 116,
         "column" : 8,
         "source_fragment" : "PM_Ingress"
       },
-      "init_table" : "PM_Ingress.pm_mac_learning",
+      "init_table" : "PM_Ingress.pm_ipv4_forwarding",
       "tables" : [
         {
-          "name" : "PM_Ingress.pm_mac_learning",
+          "name" : "PM_Ingress.pm_ipv4_forwarding",
           "id" : 0,
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 127,
-            "column" : 8,
-            "source_fragment" : "pm_mac_learning"
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "name" : "hdr.ethernet.src_addr",
-              "target" : ["ethernet", "src_addr"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [4, 0],
-          "actions" : ["PM_Ingress._learn_mac", "PM_Ingress._nop"],
-          "base_default_next" : "PM_Ingress.pm_mac_forwarding",
-          "next_tables" : {
-            "PM_Ingress._learn_mac" : "PM_Ingress.pm_mac_forwarding",
-            "PM_Ingress._nop" : "PM_Ingress.pm_mac_forwarding"
-          },
-          "default_entry" : {
-            "action_id" : 4,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "PM_Ingress.pm_mac_forwarding",
-          "id" : 1,
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 148,
-            "column" : 8,
-            "source_fragment" : "pm_mac_forwarding"
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "name" : "hdr.ethernet.dst_addr",
-              "target" : ["ethernet", "dst_addr"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [6, 5],
-          "actions" : ["PM_Ingress._forward_mac", "PM_Ingress._broadcast"],
-          "base_default_next" : "PM_Ingress.pm_ipv4_forwarding",
-          "next_tables" : {
-            "PM_Ingress._forward_mac" : "PM_Ingress.pm_ipv4_forwarding",
-            "PM_Ingress._broadcast" : "PM_Ingress.pm_ipv4_forwarding"
-          },
-          "default_entry" : {
-            "action_id" : 5,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "PM_Ingress.pm_ipv4_forwarding",
-          "id" : 2,
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 168,
+            "line" : 174,
             "column" : 8,
             "source_fragment" : "pm_ipv4_forwarding"
           },
@@ -1257,7 +811,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7, 1],
+          "action_ids" : [1, 0],
           "actions" : ["PM_Ingress._forward_ipv4", "PM_Ingress._drop"],
           "base_default_next" : "PM_Ingress.pm_cloning_all",
           "next_tables" : {
@@ -1265,7 +819,7 @@
             "PM_Ingress._drop" : "PM_Ingress.pm_cloning_all"
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 0,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1273,10 +827,10 @@
         },
         {
           "name" : "PM_Ingress.pm_cloning_all",
-          "id" : 3,
+          "id" : 1,
           "source_info" : {
             "filename" : "pm_switch.p4",
-            "line" : 185,
+            "line" : 191,
             "column" : 8,
             "source_fragment" : "pm_cloning_all"
           },
@@ -1287,88 +841,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [8],
+          "action_ids" : [2],
           "actions" : ["PM_Ingress._clone_all"],
-          "base_default_next" : "PM_Ingress.pm_cloning_by_src_ip",
+          "base_default_next" : null,
           "next_tables" : {
-            "PM_Ingress._clone_all" : "PM_Ingress.pm_cloning_by_src_ip"
-          },
-          "default_entry" : {
-            "action_id" : 8,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "PM_Ingress.pm_cloning_by_src_ip",
-          "id" : 4,
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 198,
-            "column" : 8,
-            "source_fragment" : "pm_cloning_by_src_ip"
-          },
-          "key" : [
-            {
-              "match_type" : "lpm",
-              "name" : "hdr.ipv4.src_addr",
-              "target" : ["ipv4", "src_addr"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "lpm",
-          "type" : "simple",
-          "max_size" : 1,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [9, 2],
-          "actions" : ["PM_Ingress._clone_by_src_ip", "PM_Ingress._drop"],
-          "base_default_next" : "PM_Ingress.pm_cloning_by_dst_port",
-          "next_tables" : {
-            "PM_Ingress._clone_by_src_ip" : "PM_Ingress.pm_cloning_by_dst_port",
-            "PM_Ingress._drop" : "PM_Ingress.pm_cloning_by_dst_port"
+            "PM_Ingress._clone_all" : null
           },
           "default_entry" : {
             "action_id" : 2,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "PM_Ingress.pm_cloning_by_dst_port",
-          "id" : 5,
-          "source_info" : {
-            "filename" : "pm_switch.p4",
-            "line" : 215,
-            "column" : 8,
-            "source_fragment" : "pm_cloning_by_dst_port"
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "name" : "hdr.tcp.dst_port",
-              "target" : ["tcp", "dst_port"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [10, 3],
-          "actions" : ["PM_Ingress._clone_by_dst_port", "PM_Ingress._drop"],
-          "base_default_next" : null,
-          "next_tables" : {
-            "PM_Ingress._clone_by_dst_port" : null,
-            "PM_Ingress._drop" : null
-          },
-          "default_entry" : {
-            "action_id" : 3,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1383,7 +863,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 237,
+        "line" : 243,
         "column" : 8,
         "source_fragment" : "PM_Egress"
       },
@@ -1399,7 +879,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 90,
+        "line" : 96,
         "column" : 4,
         "source_fragment" : "update_checksum( ..."
       },
@@ -1445,7 +925,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "pm_switch.p4",
-        "line" : 67,
+        "line" : 73,
         "column" : 4,
         "source_fragment" : "verify_checksum( ..."
       },

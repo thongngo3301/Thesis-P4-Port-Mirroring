@@ -95,6 +95,13 @@ header icmp_t {
     bit<16> hdr_checksum;
 }
 
+header udp_t {
+    bit<16> src_port;
+    bit<16> dst_port;
+    bit<16> length_;
+    bit<16> checksum;
+}
+
 header tcp_t {
     bit<16> src_port;
     bit<16> dst_port;
@@ -108,25 +115,19 @@ header tcp_t {
     bit<16> urgent_ptr;
 }
 
-header udp_t {
-    bit<16> src_port;
-    bit<16> dst_port;
-    bit<16> length_;
-    bit<16> checksum;
-}
-
 struct mac_learn_t {
     EthernetAddress src_addr;
     PortSpec ingress_port;
 }
 
 struct local_metadata_t {
-    // intrinsic_metadata_t intrinsic_metadata;
+    intrinsic_metadata_t intrinsic_metadata;
     mac_learn_t mac_learn;
 }
 
 struct headers {
     ethernet_t  ethernet;
     ipv4_t      ipv4;
+    udp_t       udp;
     tcp_t       tcp;
 }

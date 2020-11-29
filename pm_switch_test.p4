@@ -1,16 +1,14 @@
 /* -*- P4_16 -*- */
 
 /*
-  MAC learning:
-    digest<T>(in bit<32> receiver, in T data);
-
-  Cloning action:
+  action:
     clone3<T>(in CloneType type, in bit<32> session, in T data);
 
   "In addition to other session attributes, clone_spec determines
   the egress specification (standard metadata.egress_spec) that
   is presented to the Buffering Mechanism."
 
+  clone_spec = mirror_id in this example.
 */
 
 /*
@@ -31,7 +29,7 @@ error {
 
 parser PM_Parser(packet_in packet,
                 out headers hdr,
-                inout local_metadata_t lcmeta,
+                inout local_metadata_t meta,
                 inout standard_metadata_t stdmeta) {
   state start {
     transition parse_ethernet;
@@ -41,7 +39,7 @@ parser PM_Parser(packet_in packet,
     packet.extract(hdr.ethernet);
     transition select(hdr.ethernet.ether_type) {
       ETHERTYPE_IPV4: parse_ipv4;
-      // no default rule: all other packets rejected
+      default: accept;
     }
   }
 
@@ -49,26 +47,12 @@ parser PM_Parser(packet_in packet,
     packet.extract(hdr.ipv4);
     verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
     verify(hdr.ipv4.ihl == 4w5, error.IPv4OptionsNotSupported);
-    transition select(hdr.ipv4.protocol) {
-      IP_PROTOCOLS_UDP: parse_udp;
-      IP_PROTOCOLS_TCP: parse_tcp;
-      default: accept;
-    }
-  }
-
-  state parse_udp {
-    packet.extract(hdr.udp);
-    transition accept;
-  }
-
-  state parse_tcp {
-    packet.extract(hdr.tcp);
     transition accept;
   }
 }
 
 control PM_Verify_Checksum(inout headers hdr,
-                          inout local_metadata_t lcmeta) {
+                          inout local_metadata_t meta) {
   apply {
     verify_checksum(
             hdr.ipv4.isValid() && hdr.ipv4.ihl == IP_IHL_MIN_LENGTH,
@@ -91,7 +75,7 @@ control PM_Verify_Checksum(inout headers hdr,
 }
 
 control PM_Update_Checksum(inout headers hdr,
-                      inout local_metadata_t lcmeta) {
+                      inout local_metadata_t meta) {
   apply {
     update_checksum(
             hdr.ipv4.isValid() && hdr.ipv4.ihl == IP_IHL_MIN_LENGTH,
@@ -114,134 +98,52 @@ control PM_Update_Checksum(inout headers hdr,
 }
 
 control PM_Ingress(inout headers hdr,
-                  inout local_metadata_t lcmeta,
+                  inout local_metadata_t meta,
                   inout standard_metadata_t stdmeta) {
-  /* COMMON */
-  action _nop() { }
-
   action _drop() {
     mark_to_drop(stdmeta);
   }
 
-  /* MAC learning */
-  action _learn_mac() {
-    lcmeta.mac_learn.src_addr = hdr.ethernet.src_addr;
-    lcmeta.mac_learn.ingress_port = stdmeta.ingress_port;
-    digest(MAC_LEARN_RECEIVER, lcmeta.mac_learn);
-  }
-
-  table pm_mac_learning {
-    key = {
-      hdr.ethernet.src_addr: exact;
-    }
-    actions = {
-      _learn_mac;
-      _nop;
-    }
-    size = 1024;
-    default_action = _learn_mac();
-  }
-
-  /* MAC forwarding */
-  action _broadcast() {
-    stdmeta.mcast_grp = 1;
-  }
-
-  action _forward_mac(PortSpec port) {
-    stdmeta.egress_spec = port;
-  }
-
-  table pm_mac_forwarding {
-    key = {
-      hdr.ethernet.dst_addr: exact;
-    }
-    actions = {
-      _forward_mac;
-      _broadcast;
-    }
-    size = 1024;
-    default_action = _broadcast();
-  }
-
-  /* IPv4 forwarding */
-  action _forward_ipv4(EthernetAddress dst_mac, PortSpec port) {
+  action _forward(EthernetAddress dst_mac, PortSpec port) {
     hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
     hdr.ethernet.dst_addr = dst_mac;
     hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     stdmeta.egress_spec = port;
   }
 
-  table pm_ipv4_forwarding {
+  table forwarding {
     key = {
       hdr.ipv4.dst_addr: lpm;
+      // stdmeta.ingress_port: exact;
     }
     actions = {
-      _forward_ipv4;
+      _forward;
       _drop;
     }
     size = 1024;
     default_action = _drop();
   }
 
-  /* Cloning all packets */
-  action _clone_all() {
-    clone3(CloneType.I2E, (bit<32>)32w300, { stdmeta });
+  action pm_copy() {
+    clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
   }
 
-  table pm_cloning_all {
+  table copying {
     actions = {
-      _clone_all;
+      pm_copy;
     }
     size = 1;
-    default_action = _clone_all();
-  }
-
-  /* Cloning specific src_addr packets */
-  action _clone_by_src_ip() {
-    clone3(CloneType.I2E, (bit<32>)32w400, { stdmeta });
-  }
-
-  table pm_cloning_by_src_ip {
-    key = {
-      hdr.ipv4.src_addr: lpm;
-    }
-    actions = {
-      _clone_by_src_ip;
-      _drop;
-    }
-    size = 1;
-    default_action = _drop();
-  }
-
-  /* Cloning specific dst_port packets */
-  action _clone_by_dst_port() {
-    clone3(CloneType.I2E, (bit<32>)32w500, { stdmeta });
-  }
-
-  table pm_cloning_by_dst_port {
-    key = {
-      hdr.tcp.dst_port: exact;
-    }
-    actions = {
-      _clone_by_dst_port;
-      _drop;
-    }
-    size = 1;
-    default_action = _drop();
+    default_action = pm_copy();
   }
 
   apply {
-    // pm_mac_learning.apply();
-    // pm_mac_forwarding.apply();
-    pm_ipv4_forwarding.apply();
-    pm_cloning_all.apply();
-    // pm_cloning_by_src_ip.apply();
-    // pm_cloning_by_dst_port.apply();
+    copying.apply();
+    forwarding.apply();
   }
 }
 
 control PM_Egress(inout headers hdr,
-                inout local_metadata_t lcmeta,
+                inout local_metadata_t meta,
                 inout standard_metadata_t stdmeta) {
   apply { }
 }
