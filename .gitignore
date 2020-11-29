@@ -1,1 +1,5 @@
 *.ini
+scripts/behavioral-model/
+scripts/build/
+scripts/p4c/
+scripts/protobuf/
