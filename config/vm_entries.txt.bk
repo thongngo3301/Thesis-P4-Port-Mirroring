@@ -1,0 +1,3 @@
+table_add pm_ipv4_forwarding _forward_ipv4 10.0.0.0/24 => 00:0c:29:00:d4:77 1
+table_add pm_ipv4_forwarding _forward_ipv4 20.0.0.0/24 => 00:0c:29:3f:ee:f9 2
+mirroring_add 300 3

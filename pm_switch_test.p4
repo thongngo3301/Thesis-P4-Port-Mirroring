@@ -32,69 +32,18 @@ parser PM_Parser(packet_in packet,
                 inout local_metadata_t meta,
                 inout standard_metadata_t stdmeta) {
   state start {
-    transition parse_ethernet;
-  }
-
-  state parse_ethernet {
-    packet.extract(hdr.ethernet);
-    transition select(hdr.ethernet.ether_type) {
-      ETHERTYPE_IPV4: parse_ipv4;
-      default: accept;
-    }
-  }
-
-  state parse_ipv4 {
-    packet.extract(hdr.ipv4);
-    verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
-    verify(hdr.ipv4.ihl == 4w5, error.IPv4OptionsNotSupported);
     transition accept;
   }
 }
 
 control PM_Verify_Checksum(inout headers hdr,
                           inout local_metadata_t meta) {
-  apply {
-    verify_checksum(
-            hdr.ipv4.isValid() && hdr.ipv4.ihl == IP_IHL_MIN_LENGTH,
-            {
-              hdr.ipv4.version,
-              hdr.ipv4.ihl,
-              hdr.ipv4.diffserv,
-              hdr.ipv4.total_len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr
-            },
-            hdr.ipv4.hdr_checksum, HashAlgorithm.csum16
-    );
-  }
+  apply { }
 }
 
 control PM_Update_Checksum(inout headers hdr,
                       inout local_metadata_t meta) {
-  apply {
-    update_checksum(
-            hdr.ipv4.isValid() && hdr.ipv4.ihl == IP_IHL_MIN_LENGTH,
-            {
-              hdr.ipv4.version,
-              hdr.ipv4.ihl,
-              hdr.ipv4.diffserv,
-              hdr.ipv4.total_len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr
-            },
-            hdr.ipv4.hdr_checksum, HashAlgorithm.csum16
-    );
-  }
+  apply { }
 }
 
 control PM_Ingress(inout headers hdr,
@@ -104,17 +53,14 @@ control PM_Ingress(inout headers hdr,
     mark_to_drop(stdmeta);
   }
 
-  action _forward(EthernetAddress dst_mac, PortSpec port) {
-    hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
-    hdr.ethernet.dst_addr = dst_mac;
-    hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+  action _forward(PortSpec port) {
     stdmeta.egress_spec = port;
   }
 
   table forwarding {
     key = {
-      hdr.ipv4.dst_addr: lpm;
-      // stdmeta.ingress_port: exact;
+      // hdr.ipv4.dst_addr: lpm;
+      stdmeta.ingress_port: exact;
     }
     actions = {
       _forward;
@@ -150,10 +96,7 @@ control PM_Egress(inout headers hdr,
 
 control PM_Deparser(packet_out packet,
                   in headers hdr) {
-  apply {
-    packet.emit(hdr.ethernet);
-    packet.emit(hdr.ipv4);
-  }
+  apply { }
 }
 
 V1Switch(

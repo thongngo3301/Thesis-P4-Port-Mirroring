@@ -138,4 +138,6 @@ http://csie.nqu.edu.tw/smallko/sdn/p4utils_sendtocpu.htm
 http://csie.nqu.edu.tw/smallko/sdn/p4switch.htm
 http://csie.nqu.edu.tw/smallko/sdn/p4bmv2docker.htm
 
+https://carolinafernandez.github.io/development/2019/08/06/Recurrent-processing-in-P4
+
 key | action name | action data
