@@ -56,26 +56,26 @@
 #define UDP_PORT_SFLOW              6343
 
 #define IP_IHL_MIN_LENGTH           5
-#define MAC_LEARN_RECEIVER 1024
+#define MAC_LEARN_RECEIVER          1024
 
 typedef bit<48> EthernetAddress;
 typedef bit<32> IPv4Address;
 typedef bit<9>  PortSpec;
 
-header intrinsic_metadata_t {
+header intrinsic_metadata_h {
     bit<4> mcast_grp;
     bit<4> egress_rid;
     bit<16> mcast_hash;
     bit<32> lf_field_list;
 }
 
-header ethernet_t {
-    EthernetAddress src_addr;
+header ethernet_h {
     EthernetAddress dst_addr;
+    EthernetAddress src_addr;
     bit<16> ether_type;
 }
 
-header ipv4_t {
+header ipv4_h {
     bit<4>      version;
     bit<4>      ihl;
     bit<8>      diffserv;
@@ -90,19 +90,19 @@ header ipv4_t {
     IPv4Address dst_addr;
 }
 
-header icmp_t {
+header icmp_h {
     bit<16> type_code;
     bit<16> hdr_checksum;
 }
 
-header udp_t {
+header udp_h {
     bit<16> src_port;
     bit<16> dst_port;
     bit<16> length_;
     bit<16> checksum;
 }
 
-header tcp_t {
+header tcp_h {
     bit<16> src_port;
     bit<16> dst_port;
     bit<32> seq_no;
@@ -115,19 +115,14 @@ header tcp_t {
     bit<16> urgent_ptr;
 }
 
-struct mac_learn_t {
-    EthernetAddress src_addr;
-    PortSpec ingress_port;
-}
-
 struct local_metadata_t {
-    intrinsic_metadata_t intrinsic_metadata;
-    mac_learn_t mac_learn;
+    intrinsic_metadata_h intrinsic_metadata;
 }
 
 struct headers {
-    ethernet_t  ethernet;
-    ipv4_t      ipv4;
-    udp_t       udp;
-    tcp_t       tcp;
+    ethernet_h  ethernet;
+    ipv4_h      ipv4;
+    icmp_h      icmp;
+    udp_h       udp;
+    tcp_h       tcp;
 }

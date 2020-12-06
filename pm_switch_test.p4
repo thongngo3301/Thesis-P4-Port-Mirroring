@@ -31,7 +31,44 @@ parser PM_Parser(packet_in packet,
                 out headers hdr,
                 inout local_metadata_t meta,
                 inout standard_metadata_t stdmeta) {
+  // state start {
+  //   transition accept;
+  // }
+
   state start {
+    transition parse_ethernet;
+  }
+
+  state parse_ethernet {
+    packet.extract(hdr.ethernet);
+    transition select(hdr.ethernet.ether_type) {
+      ETHERTYPE_IPV4: parse_ipv4;
+      default: accept;
+    }
+  }
+
+  state parse_ipv4 {
+    packet.extract(hdr.ipv4);
+    transition select(hdr.ipv4.protocol) {
+      IP_PROTOCOLS_ICMP: parse_icmp;
+      IP_PROTOCOLS_UDP: parse_udp;
+      IP_PROTOCOLS_TCP: parse_tcp;
+      default: accept;
+    }
+  }
+
+  state parse_icmp {
+    packet.extract(hdr.icmp);
+    transition accept;
+  }
+
+  state parse_udp {
+    packet.extract(hdr.udp);
+    transition accept;
+  }
+
+  state parse_tcp {
+    packet.extract(hdr.tcp);
     transition accept;
   }
 }
@@ -70,20 +107,29 @@ control PM_Ingress(inout headers hdr,
     default_action = _drop();
   }
 
-  action pm_copy() {
-    clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
-  }
+  // action pm_copy() {
+  //   if (hdr.tcp.dst_port == 80) {
+  //     clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
+  //   } else {
+  //     _drop();
+  //   }
+  // }
 
-  table copying {
-    actions = {
-      pm_copy;
-    }
-    size = 1;
-    default_action = pm_copy();
-  }
+  // table copying {
+  //   actions = {
+  //     pm_copy;
+  //   }
+  //   size = 1;
+  //   default_action = pm_copy();
+  // }
 
   apply {
-    copying.apply();
+    // copying.apply();
+    if (hdr.tcp.dst_port == 80) {
+      clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
+    } else {
+      _drop();
+    }
     forwarding.apply();
   }
 }
@@ -96,7 +142,19 @@ control PM_Egress(inout headers hdr,
 
 control PM_Deparser(packet_out packet,
                   in headers hdr) {
-  apply { }
+  apply {
+    packet.emit(hdr.ethernet);
+    packet.emit(hdr.ipv4);
+    // if (hdr.icmp.isValid()) {
+      packet.emit(hdr.icmp);
+    // }
+    // if (hdr.udp.isValid()) {
+      packet.emit(hdr.udp);
+    // }
+    // if (hdr.tcp.isValid()) {
+      packet.emit(hdr.tcp);
+    // }
+  }
 }
 
 V1Switch(
