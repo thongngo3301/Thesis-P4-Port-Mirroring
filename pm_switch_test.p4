@@ -31,9 +31,6 @@ parser PM_Parser(packet_in packet,
                 out headers hdr,
                 inout local_metadata_t meta,
                 inout standard_metadata_t stdmeta) {
-  // state start {
-  //   transition accept;
-  // }
 
   state start {
     transition parse_ethernet;
@@ -107,24 +104,7 @@ control PM_Ingress(inout headers hdr,
     default_action = _drop();
   }
 
-  // action pm_copy() {
-  //   if (hdr.tcp.dst_port == 80) {
-  //     clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
-  //   } else {
-  //     _drop();
-  //   }
-  // }
-
-  // table copying {
-  //   actions = {
-  //     pm_copy;
-  //   }
-  //   size = 1;
-  //   default_action = pm_copy();
-  // }
-
   apply {
-    // copying.apply();
     if (hdr.tcp.dst_port == 80) {
       clone3(CloneType.I2E, (bit<32>)32w250, { stdmeta });
     } else {
