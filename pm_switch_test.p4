@@ -1,17 +1,6 @@
 /* -*- P4_16 -*- */
 
 /*
-  action:
-    clone3<T>(in CloneType type, in bit<32> session, in T data);
-
-  "In addition to other session attributes, clone_spec determines
-  the egress specification (standard metadata.egress_spec) that
-  is presented to the Buffering Mechanism."
-
-  clone_spec = mirror_id in this example.
-*/
-
-/*
   Packet Mirror Processing:
   pkt -> pm_ingress -> mirror -> ... -> pm_egress -> listen port
 
@@ -46,6 +35,8 @@ parser PM_Parser(packet_in packet,
 
   state parse_ipv4 {
     packet.extract(hdr.ipv4);
+    verify(hdr.ipv4.version == 4w4, error.IPv4IncorrectVersion);
+    verify(hdr.ipv4.ihl == 4w5, error.IPv4OptionsNotSupported);
     transition select(hdr.ipv4.protocol) {
       IP_PROTOCOLS_ICMP: parse_icmp;
       IP_PROTOCOLS_UDP: parse_udp;
@@ -72,12 +63,48 @@ parser PM_Parser(packet_in packet,
 
 control PM_Verify_Checksum(inout headers hdr,
                           inout local_metadata_t meta) {
-  apply { }
+  apply {
+    verify_checksum(
+      hdr.ipv4.isValid() && hdr.ipv4.ihl == IP_IHL_MIN_LENGTH,
+      {
+        hdr.ipv4.version,
+        hdr.ipv4.ihl,
+        hdr.ipv4.diffserv,
+        hdr.ipv4.total_len,
+        hdr.ipv4.identification,
+        hdr.ipv4.flags,
+        hdr.ipv4.frag_offset,
+        hdr.ipv4.ttl,
+        hdr.ipv4.protocol,
+        hdr.ipv4.src_addr,
+        hdr.ipv4.dst_addr
+      },
+      hdr.ipv4.hdr_checksum, HashAlgorithm.csum16
+    );
+  }
 }
 
 control PM_Update_Checksum(inout headers hdr,
                       inout local_metadata_t meta) {
-  apply { }
+  apply {
+    update_checksum(
+      hdr.ipv4.isValid() && hdr.ipv4.ihl == IP_IHL_MIN_LENGTH,
+      {
+        hdr.ipv4.version,
+        hdr.ipv4.ihl,
+        hdr.ipv4.diffserv,
+        hdr.ipv4.total_len,
+        hdr.ipv4.identification,
+        hdr.ipv4.flags,
+        hdr.ipv4.frag_offset,
+        hdr.ipv4.ttl,
+        hdr.ipv4.protocol,
+        hdr.ipv4.src_addr,
+        hdr.ipv4.dst_addr
+      },
+      hdr.ipv4.hdr_checksum, HashAlgorithm.csum16
+    );
+  }
 }
 
 control PM_Ingress(inout headers hdr,
@@ -125,15 +152,9 @@ control PM_Deparser(packet_out packet,
   apply {
     packet.emit(hdr.ethernet);
     packet.emit(hdr.ipv4);
-    // if (hdr.icmp.isValid()) {
-      packet.emit(hdr.icmp);
-    // }
-    // if (hdr.udp.isValid()) {
-      packet.emit(hdr.udp);
-    // }
-    // if (hdr.tcp.isValid()) {
-      packet.emit(hdr.tcp);
-    // }
+    packet.emit(hdr.icmp);
+    packet.emit(hdr.udp);
+    packet.emit(hdr.tcp);
   }
 }
 

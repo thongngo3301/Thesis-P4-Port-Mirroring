@@ -5,7 +5,7 @@
 	------(ingress)------||------(egress)------> pipeline
  */
 
-/* easy local metadata */
+/* local metadata */
 header local_metadata_t {
     bit<1> mirror_id; // used in pkt mirroring
 }
@@ -19,7 +19,7 @@ field_list mirror_field_list {
 	local_metadata.mirror_id;
 }
 
-// Hint: add your runtime command.
+// Add runtime command.
 // mirroring_add [mirror_id] [output_port]
 action mirror_select(id) {
 	modify_field(local_metadata.mirror_id, id);
